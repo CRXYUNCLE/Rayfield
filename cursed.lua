@@ -93,6 +93,8 @@ local LOOT_DELAY = 2
 
 local desiredSpeed = 16
 
+local desiredSpeed = 16
+
 MainTab:CreateSlider({
     Name = "Walk Speed",
     Range = {16, 500},
@@ -100,12 +102,17 @@ MainTab:CreateSlider({
     CurrentValue = 16,
     Callback = function(v)
         desiredSpeed = v
-        if player.Character then
-            local hum = player.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum.WalkSpeed = v end
-        end
     end
 })
+
+RunService.Heartbeat:Connect(function()
+    if player.Character then
+        local hum = player.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = desiredSpeed
+        end
+    end
+end)
 
 player.CharacterAdded:Connect(function(char)
     local hum = char:WaitForChild("Humanoid")
