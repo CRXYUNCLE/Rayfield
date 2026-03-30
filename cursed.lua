@@ -446,7 +446,7 @@ task.spawn(function()
 end)
 MainTab:CreateParagraph({
     Title = "How to Use",
-    Content = "Step 1: Enable Hitbox Expander\nStep 2: Enable Auto Farm (Fast Kill)\n Speed Resets After You resapwn"
+    Content = "Step 1: Enable Hitbox Expander\nStep 2: Enable Fast Kill (Stay Still)\n # Speed Resets After You resapwn"
 })
 local DISCORD_LINK = "https://discord.gg/hrhHYXGkWN"
 
