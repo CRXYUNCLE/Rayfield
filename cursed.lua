@@ -7,71 +7,128 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
---// LOAD RAYFIELD
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+--// LOAD LINORIA
+local repo = "https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
 
-local Window = Rayfield:CreateWindow({
-    Name = "By Scriptide",
-    LoadingTitle = "Loading...",
-    LoadingSubtitle = "For Cursed Blade",
-    ConfigurationSaving = {Enabled = false}
+local Window = Library:CreateWindow({
+    Title = "By Scriptide | Cursed Blade",
+    Center = true,
+    AutoShow = true,
 })
 
-local MainTab = Window:CreateTab("Main", 4483362458)
+local Tabs = {
+    Main = Window:AddTab("Main")
+}
+
+local MainBox = Tabs.Main:AddLeftGroupbox("Auto Farm")
+local UtilBox = Tabs.Main:AddRightGroupbox("Utility")
 
 -- =========================
 -- STATES
 -- =========================
 
-_G.AutoFarmEnabled = false
-_G.RemoteSpamEnabled = false
-_G.HitboxEnabled = false
-_G.SkillRemoteEnabled = false
-_G.AutoLootEnabled = false
+local env = getgenv()
+env.AutoFarmEnabled = false
+env.RemoteSpamEnabled = false
+env.HitboxEnabled = false
+env.SkillRemoteEnabled = false
+env.AutoLootEnabled = false
+env.AutoTPEnabled = false
 
 -- =========================
 -- TOGGLES
 -- =========================
 
-MainTab:CreateToggle({
-    Name = "Slow kill",
-    CurrentValue = false,
+MainBox:AddToggle("SlowKill", {
+    Text = "Slow Kill",
+    Default = false,
     Callback = function(v)
-        _G.AutoFarmEnabled = v
+        env.AutoFarmEnabled = v
     end
 })
 
-MainTab:CreateToggle({
-    Name = "Fast Kill",
-    CurrentValue = false,
+MainBox:AddToggle("FastKill", {
+    Text = "Fast Kill",
+    Default = false,
     Callback = function(v)
-        _G.SkillRemoteEnabled = v
+        env.SkillRemoteEnabled = v
     end
 })
 
-MainTab:CreateToggle({
-    Name = "Auto Loot",
-    CurrentValue = false,
+MainBox:AddToggle("AutoLoot", {
+    Text = "Auto Loot",
+    Default = false,
     Callback = function(v)
-        _G.AutoLootEnabled = v
+        env.AutoLootEnabled = v
     end
 })
 
-MainTab:CreateToggle({
-    Name = "Auto Sell",
-    CurrentValue = false,
+MainBox:AddToggle("AutoSell", {
+    Text = "Auto Sell",
+    Default = false,
     Callback = function(v)
-        _G.RemoteSpamEnabled = v
+        env.RemoteSpamEnabled = v
     end
 })
 
-MainTab:CreateToggle({
-    Name = "Hitbox Expander",
-    CurrentValue = false,
+MainBox:AddToggle("HitboxExpander", {
+    Text = "Hitbox Expander",
+    Default = false,
     Callback = function(v)
-        _G.HitboxEnabled = v
+        env.HitboxEnabled = v
     end
 })
+
+MainBox:AddToggle("AutoTP", {
+    Text = "Auto TP to Lobby",
+    Default = false,
+    Callback = function(v)
+        env.AutoTPEnabled = v
+    end
+})
+
+-- =========================
+-- WALK SPEED
+-- =========================
+
+local desiredSpeed = 16
+
+UtilBox:AddSlider("WalkSpeed", {
+    Text = "Walk Speed",
+    Default = 16,
+    Min = 16,
+    Max = 500,
+    Rounding = 0,
+    Callback = function(v)
+        desiredSpeed = v
+    end
+})
+
+-- =========================
+-- HOW TO USE
+-- =========================
+
+UtilBox:AddLabel("Step 1: Enable Hitbox Expander")
+UtilBox:AddLabel("Step 2: Enable Fast Kill")
+UtilBox:AddLabel("Fast Kill causes lag - dont AFK!")
+
+-- =========================
+-- THEME
+-- =========================
+
+ThemeManager:SetLibrary(Library)
+ThemeManager:ApplyToTab(Tabs.Main)
+
+-- =========================
+-- DISCORD
+-- =========================
+
+local DISCORD_LINK = "https://discord.gg/hrhHYXGkWN"
+setclipboard(DISCORD_LINK)
+pcall(function() syn.open_url(DISCORD_LINK) end)
+pcall(function() open_url(DISCORD_LINK) end)
 
 -- =========================
 -- CHARACTER
@@ -89,28 +146,11 @@ local entityFolder = workspace:WaitForChild("Entity")
 local fxFolder = workspace:WaitForChild("FX")
 
 local PULL_OFFSET = CFrame.new(0, 2, -10)
-local LOOT_DELAY = 2
-
-local desiredSpeed = 16
-
-local desiredSpeed = 16
-
-MainTab:CreateSlider({
-    Name = "Walk Speed",
-    Range = {16, 500},
-    Increment = 1,
-    CurrentValue = 16,
-    Callback = function(v)
-        desiredSpeed = v
-    end
-})
 
 RunService.Heartbeat:Connect(function()
     if player.Character then
         local hum = player.Character:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum.WalkSpeed = desiredSpeed
-        end
+        if hum then hum.WalkSpeed = desiredSpeed end
     end
 end)
 
@@ -118,6 +158,7 @@ player.CharacterAdded:Connect(function(char)
     local hum = char:WaitForChild("Humanoid")
     hum.WalkSpeed = desiredSpeed
 end)
+
 -- =========================
 -- MOB SYSTEM
 -- =========================
@@ -133,7 +174,6 @@ local function registerMob(mob)
 
     if humanoid and root then
         mobs[mob] = {humanoid = humanoid, root = root}
-
         humanoid.Died:Connect(function()
             mobs[mob] = nil
         end)
@@ -148,7 +188,7 @@ entityFolder.ChildAdded:Connect(registerMob)
 entityFolder.ChildRemoved:Connect(function(m) mobs[m] = nil end)
 
 RunService.Heartbeat:Connect(function()
-    if not _G.AutoFarmEnabled or not hrp then return end
+    if not env.AutoFarmEnabled or not hrp then return end
 
     local base = hrp.CFrame * PULL_OFFSET
 
@@ -177,29 +217,29 @@ end)
 -- HITBOX
 -- =========================
 
-local HITBOX_SIZE = Vector3.new(1000,1000,1000)
+local HITBOX_SIZE = Vector3.new(1000, 1000, 1000)
 local hitboxCache = {}
 
 task.spawn(function()
     while true do
-        if _G.HitboxEnabled then
+        if env.HitboxEnabled then
             for _, mob in ipairs(entityFolder:GetChildren()) do
-                local hrp = mob:FindFirstChild("HumanoidRootPart")
-                if hrp then
+                local root = mob:FindFirstChild("HumanoidRootPart")
+                if root then
                     if not hitboxCache[mob] then
-                        hitboxCache[mob] = hrp.Size
+                        hitboxCache[mob] = root.Size
                     end
-                    hrp.Size = HITBOX_SIZE
-                    hrp.Transparency = 1
+                    root.Size = HITBOX_SIZE
+                    root.Transparency = 1
                 end
             end
         else
             for mob, size in pairs(hitboxCache) do
                 if mob and mob.Parent then
-                    local hrp = mob:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.Size = size
-                        hrp.Transparency = 0
+                    local root = mob:FindFirstChild("HumanoidRootPart")
+                    if root then
+                        root.Size = size
+                        root.Transparency = 0
                     end
                 end
             end
@@ -212,20 +252,24 @@ end)
 -- SKILLS (CD SYSTEM + FAILSAFE)
 -- =========================
 
-local skillUI
 local cooldowns = {}
 
 local function bindSkillUI()
     cooldowns = {}
-
     local skillFolder = playerGui:FindFirstChild("GamePanel")
         and playerGui.GamePanel.MobilePanel.PC.Skill
 
     if not skillFolder then return end
 
-    for _, key in ipairs({"Q","F","R"}) do
-        local val = skillFolder[key].CD.CDVaule
-        if val then cooldowns[key] = val end
+    for _, key in ipairs({"Q", "F", "R"}) do
+        local slot = skillFolder:FindFirstChild(key)
+        if slot then
+            local cd = slot:FindFirstChild("CD")
+            if cd then
+                local val = cd:FindFirstChild("CDVaule")
+                if val then cooldowns[key] = val end
+            end
+        end
     end
 end
 
@@ -239,13 +283,13 @@ end
 
 task.spawn(function()
     while true do
-        if _G.AutoFarmEnabled then
-            for _, key in ipairs({"R","F","Q"}) do
+        if env.AutoFarmEnabled then
+            for _, key in ipairs({"R", "F", "Q"}) do
                 local cd = cooldowns[key]
                 if isReady(cd) then
-                    VirtualInputManager:SendKeyEvent(true,key,false,game)
+                    VirtualInputManager:SendKeyEvent(true, key, false, game)
                     task.wait(0.05)
-                    VirtualInputManager:SendKeyEvent(false,key,false,game)
+                    VirtualInputManager:SendKeyEvent(false, key, false, game)
                 end
             end
         end
@@ -253,14 +297,13 @@ task.spawn(function()
     end
 end)
 
--- FAILSAFE
 task.spawn(function()
     while true do
-        if _G.AutoFarmEnabled then
-            for _, key in ipairs({"Q","F"}) do
-                VirtualInputManager:SendKeyEvent(true,key,false,game)
+        if env.AutoFarmEnabled then
+            for _, key in ipairs({"Q", "F"}) do
+                VirtualInputManager:SendKeyEvent(true, key, false, game)
                 task.wait(0.05)
-                VirtualInputManager:SendKeyEvent(false,key,false,game)
+                VirtualInputManager:SendKeyEvent(false, key, false, game)
             end
         end
         task.wait(0.5)
@@ -273,7 +316,7 @@ end)
 
 task.spawn(function()
     while true do
-        if _G.AutoLootEnabled and hrp then
+        if env.AutoLootEnabled and hrp then
             for _, fx in ipairs(fxFolder:GetChildren()) do
                 if fx:IsA("BasePart") then
                     fx.CFrame = hrp.CFrame
@@ -282,19 +325,20 @@ task.spawn(function()
                 end
             end
         end
-
         task.wait(2)
     end
 end)
 
 -- =========================
--- REMOTE SKILL ATTACK SYSTEM (OP)
+-- REMOTE SKILL ATTACK SYSTEM (FAST KILL)
 -- =========================
 
-local netFolder, setState, triggerSkill
+local USE_RANDOM_OFFSET = true
+local setState, triggerSkill
+local sellState
 
 local function bindNetSkill(char)
-    netFolder = char:WaitForChild("NetMessage")
+    local netFolder = char:WaitForChild("NetMessage")
     setState = netFolder:WaitForChild("SetState")
     triggerSkill = netFolder:WaitForChild("TrigerSkill")
 end
@@ -302,20 +346,13 @@ end
 if player.Character then bindNetSkill(player.Character) end
 player.CharacterAdded:Connect(bindNetSkill)
 
--- Weapon folders
 local swordFolder = ReplicatedStorage:WaitForChild("Model"):WaitForChild("Item"):WaitForChild("Weapon"):WaitForChild("Sword")
 local staffFolder = ReplicatedStorage:WaitForChild("Model"):WaitForChild("Item"):WaitForChild("Weapon"):WaitForChild("Staff")
 
 local SKILL_KEY = "Enter"
 local SKILL_MODE = 1
-
--- OP SETTINGS
 local HITS_PER_TARGET = 3
 local ATTACK_DELAY = 0.08
-
--- =========================
--- WEAPON CACHE
--- =========================
 local currentSkillID = 101
 
 local function getEquippedWeaponName()
@@ -324,14 +361,12 @@ local function getEquippedWeaponName()
             .EquipPanel.Main.EquipInfo.Main.Page.PlayerEquip
             .Equipment_Slot.Slot2.Weapon.ItemInfo.ItemName.Text
     end)
-
     return success and result or nil
 end
 
 task.spawn(function()
     while true do
         local weaponName = getEquippedWeaponName()
-
         if weaponName then
             if swordFolder:FindFirstChild(weaponName) then
                 currentSkillID = 101
@@ -341,14 +376,10 @@ task.spawn(function()
                 currentSkillID = 101
             end
         end
-
         task.wait(0.5)
     end
 end)
 
--- =========================
--- TARGET CFrame
--- =========================
 local function getTargetCFrame(entity)
     local baseCF
 
@@ -361,55 +392,45 @@ local function getTargetCFrame(entity)
 
     if not baseCF then return nil end
 
-    -- ✅ KEEP ROTATION, only move position
     if USE_RANDOM_OFFSET then
         local offset = Vector3.new(
-            math.random(-2,2),
-            math.random(-2,2),
-            math.random(-2,2)
+            math.random(-2, 2),
+            math.random(-2, 2),
+            math.random(-2, 2)
         )
-
         return CFrame.new(baseCF.Position + offset, baseCF.Position)
     end
 
     return baseCF
 end
 
--- =========================
--- ATTACK ENTITY (MULTI HIT)
--- =========================
 local function attackEntity(entity)
     if not setState or not triggerSkill then return end
+
+    local humanoid = entity:FindFirstChildOfClass("Humanoid")
+    if not humanoid or humanoid.Health <= 0 then return end
 
     local cf = getTargetCFrame(entity)
     if not cf then return end
 
     for i = 1, HITS_PER_TARGET do
-        setState:FireServer("action", true)
-
-        triggerSkill:FireServer(
-            currentSkillID,
-            SKILL_KEY,
-            cf,
-            SKILL_MODE
-        )
-
-        setState:FireServer("action", false)
+        pcall(function()
+            setState:FireServer("action", true)
+            triggerSkill:FireServer(currentSkillID, SKILL_KEY, cf, SKILL_MODE)
+            setState:FireServer("action", false)
+        end)
+        task.wait(0.05)
     end
 end
 
--- =========================
--- MAIN LOOP (CONTROLLED)
--- =========================
 task.spawn(function()
     while true do
-        if _G.SkillRemoteEnabled then
+        if env.SkillRemoteEnabled then
             for _, entity in ipairs(entityFolder:GetChildren()) do
                 attackEntity(entity)
-                task.wait(0.01) -- small per-target spacing
+                task.wait(0.05)
             end
         end
-
         task.wait(ATTACK_DELAY)
     end
 end)
@@ -422,28 +443,26 @@ local payload = table.create(100)
 for i = 1, 100 do payload[i] = i end
 
 local remote = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("RemoteEvent")
-local setState
 
 local function bindNet(char)
     local net = char:WaitForChild("NetMessage")
-    setState = net:WaitForChild("SetState")
+    sellState = net:WaitForChild("SetState")
 end
 
 if player.Character then bindNet(player.Character) end
 player.CharacterAdded:Connect(bindNet)
 
 local function doSell()
-    if not setState then return end
-
-    setState:FireServer("action", true)
+    if not sellState then return end
+    sellState:FireServer("action", true)
     task.wait(0.05)
-    setState:FireServer("action", false)
+    sellState:FireServer("action", false)
     remote:FireServer(539767613, payload)
 end
 
 task.spawn(function()
     while true do
-        if _G.RemoteSpamEnabled then
+        if env.RemoteSpamEnabled then
             doSell()
             task.wait(30)
         else
@@ -451,13 +470,29 @@ task.spawn(function()
         end
     end
 end)
-MainTab:CreateParagraph({
-    Title = "How to Use",
-    Content = "Step 1: Enable Hitbox Expander\nStep 2: Enable Fast Kill (Stay Still)\nFast Kill Causes Lag Dont Use For AFK!!!!\n # Speed Resets After You resapwn"
-})
-local DISCORD_LINK = "https://discord.gg/hrhHYXGkWN"
 
-setclipboard(DISCORD_LINK)
-pcall(function() syn.open_url(DISCORD_LINK) end)
-pcall(function() request({Url = DISCORD_LINK, Method = "GET"}) end)
-pcall(function() open_url(DISCORD_LINK) end)
+-- =========================
+-- AUTO TP TO LOBBY
+-- =========================
+
+task.spawn(function()
+    while true do
+        if env.AutoTPEnabled and hrp then
+            local eItem = workspace:FindFirstChild("EItem")
+            if eItem then
+                for _, child in ipairs(eItem:GetChildren()) do
+                    local portalTex = child:FindFirstChild("Portal_PortalTex")
+                    local highlight = child:FindFirstChild("Highlight")
+                    if portalTex and highlight then
+                        local portal = portalTex:FindFirstChild("Portal")
+                        if portal then
+                            hrp.CFrame = portal.CFrame + Vector3.new(0, 3, 0)
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        task.wait(0.5)
+    end
+end)
